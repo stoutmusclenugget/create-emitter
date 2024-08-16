@@ -30,12 +30,6 @@ import type { Config, Emitter, Subscription, Subscriptions } from './types';
  */
 
 export function createEmitter<T extends Config>(config: T): Emitter<T> {
-  const INITIALIZE_KEY = 'initialize';
-
-  const InitializeError = new Error(
-    `${INITIALIZE_KEY}() can only be called once.`,
-  );
-
   const queue: Array<() => Promise<void>> = [];
 
   const subscriptions: Subscriptions<T> = {};
@@ -100,9 +94,9 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
           }
         }
 
-        if (key === INITIALIZE_KEY) {
+        if (key === 'initialize') {
           if (initialized) {
-            reject(InitializeError);
+            reject(new Error(`initialize() can only be called once.`));
             return;
           } else {
             initialized = true;
@@ -140,7 +134,9 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
   return {
     ...(properties as T),
 
-    __SUBSCRIPTIONS__: subscriptions,
+    get __SUBSCRIPTIONS__() {
+      return subscriptions;
+    },
 
     get enabled() {
       return enabled;
@@ -181,3 +177,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     },
   } as const;
 }
+
+export const emitter = createEmitter({
+  poop() {},
+});
