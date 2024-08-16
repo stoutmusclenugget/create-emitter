@@ -63,6 +63,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
                 subscriptions,
               )) {
                 const subscription = subscriptions[symbol];
+
                 try {
                   await Promise.allSettled([
                     subscription[key]?.(result, ...args),
