@@ -56,7 +56,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
   }
 
   function createMethod(key: keyof T & string) {
-    return async function enqueueAsyncMethod(...args: Parameters<T[keyof T]>) {
+    return async function enqueueMethod(...args: Parameters<T[keyof T]>) {
       return new Promise((resolve, reject) => {
         async function settle() {
           try {
