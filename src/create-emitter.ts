@@ -31,6 +31,7 @@ import type { Config, Emitter, Subscription, Subscriptions } from './types';
 
 export function createEmitter<T extends Config>(config: T): Emitter<T> {
   const INITIALIZE_KEY = 'initialize';
+
   const InitializeError = new Error(
     `${INITIALIZE_KEY}() can only be called once.`,
   );
@@ -38,7 +39,6 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
   const queue: Array<() => Promise<void>> = [];
 
   const subscriptions: Subscriptions<T> = {};
-  // const subscriptions: Subscriptions<T> = new WeakMap<symbol, Subscription<T>>();
 
   let enabled = true;
   let flushing = false;
