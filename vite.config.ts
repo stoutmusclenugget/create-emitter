@@ -1,18 +1,20 @@
-import { defineConfig } from "vite";
-import { resolve } from "node:path";
+import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 
 // https://vitejs.dev/config/
 
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(import.meta.dirname, "src/main.ts"),
-      formats: ["es"],
+      entry: resolve(import.meta.dirname, 'src/main.ts'),
+      fileName: 'create-emitter',
+      formats: ['es'],
+      name: 'createEmitter',
     },
   },
   resolve: {
     alias: {
-      src: resolve("src/"),
+      src: resolve('src/'),
     },
   },
 });

@@ -1,1 +1,2 @@
-export default 1;
+export { createEmitter } from './create-emitter';
+export * from './types';
