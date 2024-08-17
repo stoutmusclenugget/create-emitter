@@ -29,19 +29,6 @@ import type { Config, Emitter, Subscription, Subscriptions } from './types';
  * logger.error(':(');
  */
 
-/**
- * @remarks {@link typeOf typeOf()} returns the type of the given value.
- *
- * @param {unknown} value The value to check.
- * @returns array | function | null | number | object | promise | regexp | string | symbol | undefined
- *
- * @example
- *
- * ```ts
- * typeOf(''); // string
- * ```
- */
-
 export enum Type {
   Array = 'array',
   AsyncFunction = 'asyncfunction',
@@ -83,117 +70,67 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
 
   function createMethod(key: keyof T & string) {
     const fn = config[key];
-
-    switch (typeOf(fn)) {
-      case Type.AsyncFunction:
-        return async function enqueueAsynchronousMethod(...args: Parameters<T[keyof T]>) {
-          return new Promise((resolve, reject) => {
-            async function settle() {
-              try {
-                const result = await fn(...args);
-
-                if (enabled) {
-                  for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
-                    const subscription = subscriptions[symbol];
-
-                    try {
-                      await Promise.allSettled([
-                        subscription[key]?.(result, ...args),
-                        subscription.all?.<keyof T>(key, result, ...args),
-                      ]);
-                    } catch (error) {
-                      console.error(error);
-                    }
-                  }
-                }
-
-                resolve(result);
-              } catch (error) {
-                for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
-                  try {
-                    const subscription = subscriptions[symbol];
-                    await subscription?.catch?.<keyof T>(key, error as Error, ...args);
-                  } catch (error) {
-                    console.error(error);
-                  }
-                }
-
-                reject(error);
-              }
-            }
-
-            if (key === 'initialize') {
-              if (initialized) {
-                reject(new Error(`initialize() can only be called once.`));
-                return;
-              } else {
-                initialized = true;
-                queue.unshift(settle);
-              }
-            } else {
-              if (typeOf(config.initialize) === Type.Undefined) {
-                initialized = true;
-              }
-
-              queue.push(settle);
-            }
-
-            if (!initialized || flushing) {
-              return;
-            }
-
-            flushing = true;
-
-            dequeue();
-          });
-        };
-      case Type.Function:
-        return function executeSynchronousMethod(...args: Parameters<T[keyof T]>) {
+    return async function enqueueMethod(...args: Parameters<T[keyof T]>) {
+      return new Promise((resolve, reject) => {
+        async function settle() {
           try {
-            if (key === 'initialize') {
-              if (initialized) {
-                throw new Error(`initialize() can only be called once.`);
-              } else {
-                initialized = true;
-              }
-            } else {
-              if (typeOf(config.initialize) === Type.Undefined) {
-                initialized = true;
-              }
-            }
-
-            const result = fn(...args);
+            const result = await fn(...args);
 
             if (enabled) {
               for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
+                const subscription = subscriptions[symbol];
+
                 try {
-                  const subscription = subscriptions[symbol];
-                  subscription[key]?.(result, ...args);
-                  subscription.all?.<keyof T>(key, result, ...args);
+                  await Promise.allSettled([
+                    subscription[key]?.(result, ...args),
+                    subscription.all?.<keyof T>(key, result, ...args),
+                  ]);
                 } catch (error) {
                   console.error(error);
                 }
               }
             }
 
-            return result;
+            resolve(result);
           } catch (error) {
             for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
               try {
                 const subscription = subscriptions[symbol];
-                subscription.catch?.<keyof T>(key, error as Error, ...args);
+                await subscription?.catch?.<keyof T>(key, error as Error, ...args);
               } catch (error) {
                 console.error(error);
               }
             }
 
-            throw error;
+            reject(error);
           }
-        };
+        }
 
-      default:
-        throw new Error(':(');
-    }
+        if (key === 'initialize') {
+          if (initialized) {
+            reject(new Error(`initialize() can only be called once.`));
+            return;
+          } else {
+            initialized = true;
+            queue.unshift(settle);
+          }
+        } else {
+          if (typeOf(config.initialize) === Type.Undefined) {
+            initialized = true;
+          }
+
+          queue.push(settle);
+        }
+
+        if (!initialized || flushing) {
+          return;
+        }
+
+        flushing = true;
+
+        dequeue();
+      });
+    };
   }
 
   const properties = Object.keys(config).reduce(
@@ -250,7 +187,3 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     },
   } as const;
 }
-
-export const emitter = createEmitter({
-  poop() {},
-});
