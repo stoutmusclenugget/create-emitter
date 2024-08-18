@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { AsyncReturnType, ConditionalPick } from 'type-fest';
 
 export type Fn = (...args: any) => any;

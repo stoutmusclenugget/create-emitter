@@ -1,5 +1,7 @@
-import { createEmitter, typeOf, Type } from './create-emitter';
+import { Type } from './types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createEmitter } from './create-emitter';
+import { typeOf } from './type-of';
 
 describe('createEmitter()', () => {
   beforeEach(() => {

@@ -9,6 +9,7 @@ export default [
     ignores: ['coverage', 'public', 'dist', 'pnpm-lock.yaml'],
     rules: {
       'no-empty': 'off',
+      'no-explicit-any': 'off',
     },
   },
   {
