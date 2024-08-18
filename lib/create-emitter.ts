@@ -34,7 +34,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     dequeue();
   }
 
-  function wrapValue(key: keyof T & string) {
+  function wrapValue(key: keyof T) {
     const value = config[key];
 
     function flush(settle: Fn) {
