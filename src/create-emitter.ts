@@ -52,8 +52,8 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     dequeue();
   }
 
-  function createMethod(key: keyof T & string) {
-    const fn = config[key];
+  function wrapValue(key: keyof T & string) {
+    const value = config[key];
 
     function flush(settle: Fn) {
       if (key === 'initialize') {
@@ -80,13 +80,13 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
       dequeue();
     }
 
-    switch (typeOf(fn)) {
+    switch (typeOf(value)) {
       case Type.AsyncFunction:
         return async function enqueueAsynchronousMethod(...args: Parameters<T[keyof T]>) {
           return new Promise((resolve, reject) => {
             async function settle() {
               try {
-                const result = await fn(...args);
+                const result = await value(...args);
 
                 if (enabled) {
                   for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
@@ -129,7 +129,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
         return function executeSynchronousMethod(...args: Parameters<T[keyof T]>) {
           function settle() {
             try {
-              const result = fn(...args);
+              const result = value(...args);
 
               if (enabled) {
                 for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
@@ -165,14 +165,14 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
           throw error;
         };
       default:
-        throw new Error(':(');
+        return value;
     }
   }
 
   const properties = Object.keys(config).reduce(
     (accumulator, key) => ({
       ...accumulator,
-      [key]: typeOf(config[key]).includes(Type.Function) ? createMethod(key) : config[key],
+      [key]: wrapValue(key),
     }),
     {},
   );
