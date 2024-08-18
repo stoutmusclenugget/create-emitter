@@ -120,7 +120,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
           });
         };
       case Type.Function:
-        return function executeSynchronousMethod(...args: Parameters<T[keyof T]>) {
+        return function enqueueSynchronousMethod(...args: Parameters<T[keyof T]>) {
           function settle() {
             try {
               const result = value(...args);
