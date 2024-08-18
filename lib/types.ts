@@ -29,3 +29,18 @@ export type Emitter<C extends Config> = C & {
   enable(): void;
   subscribe(subscription: Subscription<ConditionalPick<C, Fn>>): () => void;
 };
+
+export enum Type {
+  Array = 'array',
+  AsyncFunction = 'asyncfunction',
+  Error = 'error',
+  Function = 'function',
+  Null = 'null',
+  Number = 'number',
+  Object = 'object',
+  Promise = 'promise',
+  Regexp = 'regexp',
+  String = 'string',
+  Symbol = 'symbol',
+  Undefined = 'undefined',
+}

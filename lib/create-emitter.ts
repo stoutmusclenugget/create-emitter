@@ -1,23 +1,6 @@
 import type { Config, Emitter, Fn, Subscription } from './types';
-
-export enum Type {
-  Array = 'array',
-  AsyncFunction = 'asyncfunction',
-  Error = 'error',
-  Function = 'function',
-  Null = 'null',
-  Number = 'number',
-  Object = 'object',
-  Promise = 'promise',
-  Regexp = 'regexp',
-  String = 'string',
-  Symbol = 'symbol',
-  Undefined = 'undefined',
-}
-
-export function typeOf(value: unknown): Type {
-  return Object.prototype.toString.call(value).slice(8, -1).toLowerCase() as unknown as Type;
-}
+import { Type } from './types';
+import { typeOf } from './type-of';
 
 /**
  * @remarks createEmitter() provides a super flexible api for creating an asynchronous event
