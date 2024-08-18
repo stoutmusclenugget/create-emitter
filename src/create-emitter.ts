@@ -49,9 +49,6 @@ export function typeOf(value: unknown): Type {
 }
 
 export function createEmitter<T extends Config>(config: T): Emitter<T> {
-  const INITIALIZE_KEY = 'initialize';
-  const InitializeError = new Error(`${INITIALIZE_KEY}() can only be called once.`);
-
   const queue: Array<() => unknown> = [];
 
   const subscriptions: Subscriptions<T> = {};
@@ -75,9 +72,9 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     const fn = config[key];
 
     function flush(settle: Fn) {
-      if (key === INITIALIZE_KEY) {
+      if (key === 'initialize') {
         if (initialized) {
-          return InitializeError;
+          return new Error('initialize() can only be called once.');
         } else {
           initialized = true;
           queue.unshift(settle);
