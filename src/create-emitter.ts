@@ -104,9 +104,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
                 for (const [, subscription] of subscriptions) {
                   try {
                     await subscription?.catch?.<keyof T>(key, error as Error, ...args);
-                  } catch (error) {
-                    console.error(error);
-                  }
+                  } catch {}
                 }
 
                 reject(error);
@@ -142,9 +140,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
               for (const [, subscription] of subscriptions) {
                 try {
                   subscription?.catch?.<keyof T>(key, error as Error, ...args);
-                } catch (error) {
-                  console.error(error);
-                }
+                } catch {}
               }
 
               throw error;
