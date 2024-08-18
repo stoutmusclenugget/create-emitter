@@ -90,13 +90,7 @@ describe('createEmitter()', () => {
 
     expect(callStack).toMatchObject([]);
 
-    vi.runAllTimers();
-
-    await vi.waitFor(() => {
-      if (emitter.flushing) {
-        throw new Error('Still flushing...');
-      }
-    });
+    await vi.runAllTimers();
 
     expect(callStack).toMatchObject(['first', 'second']);
   });
