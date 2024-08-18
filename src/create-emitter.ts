@@ -5,28 +5,12 @@ import type { Config, Emitter, Fn, Subscription, Subscriptions } from './types';
  * emitter. All events that are emitted through this api are fired off in the order in which they
  * are called while exposing each method as an aynchronous function.
  *
- * @param {Object} config - An object of functions. Also, optionally takes a special `initialize()`
+ * @param {Object} config - An static object of values. Also, optionally takes a special `initialize()`
  * function that will execute once before the first interaction with the emitter has resolved.
  *
  * @returns An object with the same functions you passed into the config object with the addition
  * of `subscribe()` and `initialized()` methods. The only difference is that all the methods you
  * passed into the config object are now asynchronous.
- *
- * @example
- *
- * const logger = createEmitter({
- *   error: message => ({
- *     level: 'error',
- *     message,
- *     timestamp: Date.now()
- *   }),
- * });
- *
- * logger.subscribe({
- *   error: ({ level, ...log }) => console[log.level](log),
- * });
- *
- * logger.error(':(');
  */
 
 export enum Type {
