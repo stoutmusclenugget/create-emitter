@@ -29,5 +29,3 @@ export type Emitter<C extends Config> = C & {
   enable(): void;
   subscribe(subscription: Subscription<ConditionalPick<C, Fn>>): () => void;
 };
-
-export * as CreateEmitter from './types';
