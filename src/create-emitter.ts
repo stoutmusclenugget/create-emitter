@@ -1,7 +1,7 @@
 import type { Config, Emitter, Fn, Subscription, Subscriptions } from './types';
 
 /**
- * @remarks {@link createEmitter} provides a super flexible api for creating an asynchronous event
+ * @remarks createEmitter() provides a super flexible api for creating an asynchronous event
  * emitter. All events that are emitted through this api are fired off in the order in which they
  * are called while exposing each method as an aynchronous function.
  *
