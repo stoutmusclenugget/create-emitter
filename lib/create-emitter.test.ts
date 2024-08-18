@@ -119,6 +119,8 @@ describe('createEmitter()', () => {
 
     emitter.second();
 
+    expect(callStack).toMatchObject([]);
+
     await vi.runAllTimersAsync();
 
     expect(callStack).toMatchObject(['first', 'second']);
