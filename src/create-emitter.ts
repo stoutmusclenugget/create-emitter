@@ -1,18 +1,5 @@
 import type { Config, Emitter, Fn, Subscription } from './types';
 
-/**
- * @remarks createEmitter() provides a super flexible api for creating an asynchronous event
- * emitter. All events that are emitted through this api are fired off in the order in which they
- * are called while exposing each method as an aynchronous function.
- *
- * @param {Object} config - An static object of values. Also, optionally takes a special `initialize()`
- * function that will execute once before the first interaction with the emitter has resolved.
- *
- * @returns An object with the same functions you passed into the config object with the addition
- * of `subscribe()` and `initialized()` methods. The only difference is that all the methods you
- * passed into the config object are now asynchronous.
- */
-
 export enum Type {
   Array = 'array',
   AsyncFunction = 'asyncfunction',
@@ -32,6 +19,18 @@ export function typeOf(value: unknown): Type {
   return Object.prototype.toString.call(value).slice(8, -1).toLowerCase() as unknown as Type;
 }
 
+/**
+ * @remarks createEmitter() provides a super flexible api for creating an asynchronous event
+ * emitter. All events that are emitted through this api are fired off in the order in which they
+ * are called while exposing each method as an aynchronous function.
+ *
+ * @param {Object} config - An static object of values. Also, optionally takes a special `initialize()`
+ * function that will execute once before the first interaction with the emitter has resolved.
+ *
+ * @returns An object with the same functions you passed into the config object with the addition
+ * of `subscribe()` and `initialized()` methods. The only difference is that all the methods you
+ * passed into the config object are now asynchronous.
+ */
 export function createEmitter<T extends Config>(config: T): Emitter<T> {
   const queue: Array<() => unknown> = [];
 
@@ -160,16 +159,14 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     }
   }
 
-  const properties = Object.keys(config).reduce(
-    (accumulator, key) => ({
-      ...accumulator,
-      [key]: wrapValue(key),
-    }),
-    {},
-  );
-
   return {
-    ...(properties as T),
+    ...(Object.keys(config).reduce(
+      (accumulator, key) => ({
+        ...accumulator,
+        [key]: wrapValue(key),
+      }),
+      {},
+    ) as T),
 
     get __SUBSCRIPTIONS__() {
       return subscriptions;
