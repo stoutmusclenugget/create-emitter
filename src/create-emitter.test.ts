@@ -18,6 +18,20 @@ describe('createEmitter()', () => {
     expect(emitter).toHaveProperty('property', 'Hello, world!');
   });
 
+  it('Returns synchronous versions of all the methods you pass into config.', () => {
+    const emitter = createEmitter({
+      first() {},
+      second() {},
+    });
+
+    expect(emitter).toHaveProperty('first');
+    expect(emitter).toHaveProperty('second');
+    expect(typeOf(emitter.first)).toEqual(Type.Function);
+    expect(typeOf(emitter.second)).toEqual(Type.Function);
+    expect(emitter.first()).toBeUndefined();
+    expect(emitter.second()).toBeUndefined();
+  });
+
   it('Returns asynchronous versions of all the methods you pass into config.', () => {
     const emitter = createEmitter({
       async first() {},
@@ -52,7 +66,42 @@ describe('createEmitter()', () => {
     expect(callStack).toMatchObject(['first', 'second']);
   });
 
-  it('Resolves method calls in the order in which they are called regardless of execution time.', async () => {
+  it('Resolves synchronous method calls in the order in which they finish executing.', async () => {
+    const callStack: Array<string> = [];
+
+    const first = () => {
+      setTimeout(() => {
+        callStack.push('first');
+      }, 1000);
+    };
+
+    const second = () => callStack.push('second');
+
+    const emitter = createEmitter({
+      first,
+      second,
+    });
+
+    emitter.first();
+
+    expect(callStack).toMatchObject([]);
+
+    emitter.second();
+
+    expect(callStack).toMatchObject([]);
+
+    vi.runAllTimers();
+
+    await vi.waitFor(() => {
+      if (emitter.flushing) {
+        throw new Error('Still flushing...');
+      }
+    });
+
+    expect(callStack).toMatchObject(['first', 'second']);
+  });
+
+  it('Resolves  calls in the order in which they are called regardless of execution time.', async () => {
     const callStack: Array<string> = [];
 
     const first = async () =>
@@ -117,7 +166,23 @@ describe('createEmitter()', () => {
     expect(callStack).toMatchObject(['initialize']);
   });
 
-  it('Prevents initialize from being called multiple times.', async () => {
+  it('Prevents sync initialize from being called multiple times.', () => {
+    const callStack: Array<string> = [];
+
+    const initialize = () => callStack.push('initialize');
+
+    const emitter = createEmitter({ initialize });
+
+    emitter.initialize();
+
+    expect(callStack).toMatchObject(['initialize']);
+
+    expect(() => emitter.initialize()).toThrow('initialize() can only be called once.');
+
+    expect(callStack).toMatchObject(['initialize']);
+  });
+
+  it('Prevents async initialize from being called multiple times.', async () => {
     const callStack: Array<string> = [];
 
     const initialize = async () => callStack.push('initialize');
@@ -338,7 +403,29 @@ describe('createEmitter()', () => {
     expect(initialize).toHaveBeenCalledTimes(1);
   });
 
-  it('Supports enabling/disabling for subscriptions', async () => {
+  it('Supports enabling/disabling for sync subscriptions', async () => {
+    const emitter = createEmitter({
+      first() {},
+    });
+
+    emitter.disable();
+
+    const first = vi.fn();
+
+    emitter.subscribe({ first });
+
+    await emitter.first();
+
+    expect(first).toHaveBeenCalledTimes(0);
+
+    emitter.enable();
+
+    await emitter.first();
+
+    expect(first).toHaveBeenCalledTimes(1);
+  });
+
+  it('Supports enabling/disabling for async subscriptions', async () => {
     const emitter = createEmitter({
       async first() {},
     });

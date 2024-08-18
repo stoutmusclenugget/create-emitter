@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import type { Asyncify, AsyncReturnType, ConditionalPick } from 'type-fest';
+import type { AsyncReturnType, ConditionalPick } from 'type-fest';
 
 export type Fn = (...args: any) => any;
 
@@ -22,9 +22,7 @@ export type Subscription<
 
 export type Subscriptions<T extends Config> = Record<symbol, Subscription<T>>;
 
-export type Emitter<C extends Config> = {
-  [Key in keyof C]: C[Key] extends Fn ? Asyncify<C[Key]> : C[Key];
-} & {
+export type Emitter<C extends Config> = C & {
   __SUBSCRIPTIONS__: Subscriptions<C>;
   get enabled(): boolean;
   get flushing(): boolean;
