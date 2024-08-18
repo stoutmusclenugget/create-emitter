@@ -249,12 +249,12 @@ describe('createEmitter()', () => {
     unsubscribe();
 
     expect(emitter.flushing).toEqual(true);
-    expect(Object.getOwnPropertySymbols(emitter.__SUBSCRIPTIONS__).length).toBe(1);
+    expect(emitter.__SUBSCRIPTIONS__.size).toBe(1);
 
     await vi.runAllTimersAsync();
 
     expect(emitter.flushing).toEqual(false);
-    expect(Object.keys(emitter.__SUBSCRIPTIONS__).length).toBe(0);
+    expect(emitter.__SUBSCRIPTIONS__.size).toBe(0);
   });
 
   it('Exposes a getter to confirm initialized state.', async () => {

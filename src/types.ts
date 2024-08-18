@@ -20,10 +20,8 @@ export type Subscription<
   }
 >;
 
-export type Subscriptions<T extends Config> = Record<symbol, Subscription<T>>;
-
 export type Emitter<C extends Config> = C & {
-  __SUBSCRIPTIONS__: Subscriptions<C>;
+  __SUBSCRIPTIONS__: Map<symbol, Subscription<C>>;
   get enabled(): boolean;
   get flushing(): boolean;
   get initialized(): boolean;

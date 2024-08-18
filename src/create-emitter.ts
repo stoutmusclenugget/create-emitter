@@ -1,4 +1,4 @@
-import type { Config, Emitter, Fn, Subscription, Subscriptions } from './types';
+import type { Config, Emitter, Fn, Subscription } from './types';
 
 /**
  * @remarks createEmitter() provides a super flexible api for creating an asynchronous event
@@ -35,7 +35,7 @@ export function typeOf(value: unknown): Type {
 export function createEmitter<T extends Config>(config: T): Emitter<T> {
   const queue: Array<() => unknown> = [];
 
-  const subscriptions: Subscriptions<T> = {};
+  const subscriptions = new Map<symbol, Subscription<T>>();
 
   let enabled = true;
   let flushing = false;
@@ -89,13 +89,11 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
                 const result = await value(...args);
 
                 if (enabled) {
-                  for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
-                    const subscription = subscriptions[symbol];
-
+                  for (const [, subscription] of subscriptions) {
                     try {
                       await Promise.allSettled([
-                        subscription[key]?.(result, ...args),
-                        subscription.all?.<keyof T>(key, result, ...args),
+                        subscription?.[key]?.(result, ...args),
+                        subscription?.all?.<keyof T>(key, result, ...args),
                       ]);
                     } catch {}
                   }
@@ -103,9 +101,8 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
 
                 resolve(result);
               } catch (error) {
-                for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
+                for (const [, subscription] of subscriptions) {
                   try {
-                    const subscription = subscriptions[symbol];
                     await subscription?.catch?.<keyof T>(key, error as Error, ...args);
                   } catch (error) {
                     console.error(error);
@@ -132,21 +129,19 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
               const result = value(...args);
 
               if (enabled) {
-                for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
+                for (const [, subscription] of subscriptions) {
                   try {
-                    const subscription = subscriptions[symbol];
-                    subscription[key]?.(result, ...args);
-                    subscription.all?.<keyof T>(key, result, ...args);
+                    subscription?.[key]?.(result, ...args);
+                    subscription?.all?.<keyof T>(key, result, ...args);
                   } catch {}
                 }
               }
 
               return result;
             } catch (error) {
-              for (const symbol of Object.getOwnPropertySymbols(subscriptions)) {
+              for (const [, subscription] of subscriptions) {
                 try {
-                  const subscription = subscriptions[symbol];
-                  subscription.catch?.<keyof T>(key, error as Error, ...args);
+                  subscription?.catch?.<keyof T>(key, error as Error, ...args);
                 } catch (error) {
                   console.error(error);
                 }
@@ -207,18 +202,18 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     subscribe(subscription: Subscription<T>) {
       const key = Symbol(crypto.randomUUID());
 
-      subscriptions[key] = subscription;
+      subscriptions.set(key, subscription);
 
       return function unsubscribe() {
         if (flushing) {
           queue.push(() => {
-            delete subscriptions[key];
+            subscriptions.delete(key);
           });
 
           return;
         }
 
-        delete subscriptions[key];
+        subscriptions.delete(key);
       };
     },
   } as const;
