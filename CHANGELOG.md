@@ -1,5 +1,11 @@
 # @stoutmusclenugget/create-emitter
 
+## 0.1.1
+
+### Patch Changes
+
+- 1b3d6e2: Disables Git Checks So Publishing Will Work
+
 ## 0.1.0
 
 ### Minor Changes
