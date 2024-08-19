@@ -1,4 +1,4 @@
-import eslintConfigPrettier, { rules } from 'eslint-config-prettier';
+import eslintConfigPrettier from 'eslint-config-prettier';
 import globals from 'globals';
 import pluginjs from '@eslint/js';
 import tseslint from 'typescript-eslint';
