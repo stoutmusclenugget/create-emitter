@@ -14,7 +14,7 @@
     "dev": "vite",
     "format": "prettier --write .",
     "lint": "eslint",
-    "publish": "pnpm publish --access public",
+    "publish": "pnpm publish --access public --no-git-checks",
     "prepublish": "pnpm run build",
     "test": "vitest",
     "type-check": "tsc"
