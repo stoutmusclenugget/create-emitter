@@ -13,7 +13,7 @@
     "build": "pnpm type-check && vite build",
     "dev": "vite",
     "format": "prettier --write .",
-    "lint": "eslint .",
+    "lint": "eslint",
     "publish": "pnpm publish --access public",
     "prepublish": "pnpm run build",
     "test": "vitest",

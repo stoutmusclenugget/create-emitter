@@ -5,12 +5,7 @@ import tseslint from 'typescript-eslint';
 
 export default [
   {
-    files: ['**/*.{js,mjs,cjs,ts}'],
-    ignores: ['coverage', 'public', 'dist', 'pnpm-lock.yaml'],
-    rules: {
-      'no-empty': 'off',
-      'no-explicit-any': 'off',
-    },
+    ignores: ['dist', 'node_modules', 'pnpm-lock.yaml'],
   },
   {
     languageOptions: {
@@ -23,4 +18,12 @@ export default [
   pluginjs.configs.recommended,
   eslintConfigPrettier,
   ...tseslint.configs.recommended,
+  {
+    files: ['**/*.{js,mjs,cjs,ts}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-empty': 'off',
+      'no-explicit-any': 'off',
+    },
+  },
 ];
