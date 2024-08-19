@@ -1,5 +1,11 @@
 # @stoutmusclenugget/create-emitter
 
+## 0.1.2
+
+### Patch Changes
+
+- 22c8cb6: Fixes Publish Script
+
 ## 0.1.1
 
 ### Patch Changes
