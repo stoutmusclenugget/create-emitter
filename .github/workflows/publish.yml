@@ -1,11 +1,15 @@
-name: Pull Request
+name: Publish
 
 on:
-  pull_request:
-    types: [opened, ready_for_review, reopened, synchronize]
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  checks:
+  publish:
+    name: Publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -22,13 +26,11 @@ jobs:
           cache: 'pnpm'
       - name: Install Dependencies
         run: pnpm install
-      - name: Changeset
-        run: |
-          git pull -f origin main:main
-          pnpm changeset status --since=main
-      - name: Lint
-        run: pnpm run lint
-      - name: Test
-        run: pnpm run test
-      - name: Type Check
-        run: pnpm run type-check
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
