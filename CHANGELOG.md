@@ -1,5 +1,11 @@
 # @stoutmusclenugget/create-emitter
 
+## 0.1.3
+
+### Patch Changes
+
+- 3eead48: Workflow Dispatch for Publish
+
 ## 0.1.2
 
 ### Patch Changes
