@@ -26,7 +26,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
       - name: Changeset
-        run: pnpm changeset status --since=main
+        run: |
+          git pull -f origin main:main
+          pnpm changeset status --since=main
       - name: Lint
         run: pnpm run lint
       - name: Test
