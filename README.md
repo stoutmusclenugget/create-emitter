@@ -5,7 +5,7 @@ This package provides a flexible API for creating an event emitter that enables 
 ## Installation
 
 ```bash
-pnpm install @stoutmusclenugget/create-emitter
+npm install @stoutmusclenugget/create-emitter
 yarn add @stoutmusclenugget/create-emitter
 pnpm add @stoutmusclenugget/create-emitter
 ```
@@ -16,7 +16,7 @@ pnpm add @stoutmusclenugget/create-emitter
 
 ### Creating an Emitter
 
-Call the `createEmitter()` function by passing in a configuration object - a configuration object can map any value to its keys, including functions, objects, primitives, etc. Then you are returned an emitter where you have access to everything you passed in and some additional properties that are added for you.
+Call the [`createEmitter()`](#function-createemittert-extends-configconfig-t-emittert) function by passing in a configuration object - a configuration object can map any value to its keys, including: functions, objects, primitives, etc.
 
 ```ts
 import { createEmitter } from '@stoutmusclenugget/create-emitter';
@@ -42,8 +42,8 @@ emitter.staticObject; // {}
 
 In addition to the methods and properties you passed in, you now have access to the following methods and properties, which I will explain in depth further down:
 
-1. [`const unsubscribe = emitter.subscribe()`](/README.md#L54): Allows you to subscribe to any method you passed into the initial configuration object.
-2. `emitter.enable();`: Enables subscriptions to be triggered when their associated methods are called.
+1. [`const unsubscribe = emitter.subscribe()`](#emittersubscribesubscription-subscriptiont---void): Allows you to subscribe to any method you passed into the initial configuration object.
+2. [`emitter.enable();`](): Enables subscriptions to be triggered when their associated methods are called.
 3. `emitter.disable();`: Disables subscriptions to method calls.
 4. `emitter.enabled;`: A boolean value that tells you if subscriptions are enabled/disabled.
 5. `emitter.flushing;`: A boolean value that tells you if the event queue is being flushed.
@@ -51,19 +51,62 @@ In addition to the methods and properties you passed in, you now have access to 
 
 ## API
 
-### `function createEmitter<T extends Config>(config: T): Emitter<T>`
+### function createEmitter<`T` extends [Config](#config)>(config: `T`): [Emitter](#emitter)<T>
 
-### `emitter.subscribe(subscription: Subscription<T>): () => void`
+### emitter.subscribe(subscription: [Subscription](#subscription)<T>): `() => void`
 
-### `emitter.enable(): void`
+### emitter.enable(): `void`
 
-### `emitter.disable(): void`
+### emitter.disable(): `void`
 
-### `emitter.enabled: boolean`
+### emitter.enabled: `boolean`
 
-### `emitter.flushing: boolean`
+### emitter.flushing: `boolean`
 
-### `emitter.initialized: boolean`
+### emitter.initialized: `boolean`
+
+## Types
+
+### `Fn`
+
+```ts
+type Fn = (...args: any) => any;
+```
+
+### `Config`
+
+```ts
+type Config = Record<string, any> & { initialize?: Fn };
+```
+
+### `Subscription`
+
+```ts
+type Subscription<C extends ConditionalPick<Config, Fn>, Key extends keyof C = keyof C> = Readonly<
+  {
+    [Key in keyof C]?: (payload: AsyncReturnType<C[Key]>, ...args: Parameters<C[Key]>) => unknown;
+  } & {
+    all?<K extends Key>(key: K, payload: AsyncReturnType<C[K]>): unknown;
+    all?<K extends Key>(key: K, payload: AsyncReturnType<C[K]>, ...args: Parameters<C[K]>): unknown;
+    catch?<K extends Key>(key: K, payload: Error): unknown;
+    catch?<K extends Key>(key: K, payload: Error, ...args: Parameters<C[K]>): unknown;
+  }
+>;
+```
+
+### `Emitter`
+
+```ts
+type Emitter<C extends Config> = C & {
+  __SUBSCRIPTIONS__: Map<symbol, Subscription<C>>;
+  get enabled(): boolean;
+  get flushing(): boolean;
+  get initialized(): boolean;
+  disable(): void;
+  enable(): void;
+  subscribe(subscription: Subscription<ConditionalPick<C, Fn>>): () => void;
+};
+```
 
 ## License
 
