@@ -1,5 +1,11 @@
 # @stoutmusclenugget/create-emitter
 
+## 0.2.0
+
+### Minor Changes
+
+- 32bbd0a: Adds Initial Documentation
+
 ## 0.1.3
 
 ### Patch Changes
