@@ -2,7 +2,10 @@ import type { AsyncReturnType, ConditionalPick } from 'type-fest';
 
 export type Fn = (...args: any) => any;
 
-export type Config = Record<string, any> & { initialize?: Fn };
+export type Config = Record<string, any> & {
+  enabled?: boolean;
+  initialize?: Fn;
+};
 
 export type Subscription<
   C extends ConditionalPick<Config, Fn>,

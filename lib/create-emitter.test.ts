@@ -22,16 +22,20 @@ describe('createEmitter()', () => {
 
   it('Returns synchronous versions of all the methods you pass into config.', () => {
     const emitter = createEmitter({
-      first() {},
-      second() {},
+      first() {
+        return 1;
+      },
+      second() {
+        return 2;
+      },
     });
 
     expect(emitter).toHaveProperty('first');
     expect(emitter).toHaveProperty('second');
     expect(typeOf(emitter.first)).toEqual(Type.Function);
     expect(typeOf(emitter.second)).toEqual(Type.Function);
-    expect(emitter.first()).toBeUndefined();
-    expect(emitter.second()).toBeUndefined();
+    expect(emitter.first()).toBe(1);
+    expect(emitter.second()).toBe(2);
   });
 
   it('Returns asynchronous versions of all the methods you pass into config.', () => {
@@ -65,35 +69,6 @@ describe('createEmitter()', () => {
 
     expect(first).toHaveBeenCalledTimes(1);
     expect(second).toHaveBeenCalledTimes(1);
-    expect(callStack).toMatchObject(['first', 'second']);
-  });
-
-  it('Resolves synchronous method calls in the order in which they finish executing.', async () => {
-    const callStack: Array<string> = [];
-
-    const first = () => {
-      setTimeout(() => {
-        callStack.push('first');
-      }, 1000);
-    };
-
-    const second = () => callStack.push('second');
-
-    const emitter = createEmitter({
-      first,
-      second,
-    });
-
-    emitter.first();
-
-    expect(callStack).toMatchObject([]);
-
-    emitter.second();
-
-    expect(callStack).toMatchObject([]);
-
-    await vi.runAllTimers();
-
     expect(callStack).toMatchObject(['first', 'second']);
   });
 
