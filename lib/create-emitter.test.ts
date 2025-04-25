@@ -12,12 +12,12 @@ describe('createEmitter()', () => {
     vi.restoreAllMocks();
   });
 
-  it('Returns static properties', () => {
+  it('Preserves static properties in the configuration object', () => {
     const emitter = createEmitter({
-      property: 'Hello, world!',
+      staticProperty: 'Static Value',
     });
 
-    expect(emitter).toHaveProperty('property', 'Hello, world!');
+    expect(emitter.staticProperty).toBe('Static Value');
   });
 
   it('Returns synchronous versions of all the methods you pass into config.', () => {
@@ -230,23 +230,16 @@ describe('createEmitter()', () => {
     expect(emitter.__SUBSCRIPTIONS__.size).toBe(0);
   });
 
-  it('Exposes a getter to confirm initialized state.', async () => {
-    const first = async () => {};
-
-    const initialize = async () => {};
-
+  it('Sets the initialized state after calling initialize', async () => {
     const emitter = createEmitter({
-      first,
-      initialize,
+      async initialize() {},
     });
 
-    expect(emitter.initialized).toEqual(false);
+    expect(emitter.initialized).toBe(false);
 
     await emitter.initialize();
 
-    await emitter.first();
-
-    expect(emitter.initialized).toEqual(true);
+    expect(emitter.initialized).toBe(true);
   });
 
   it('Rejects if a method throws.', async () => {
@@ -418,5 +411,136 @@ describe('createEmitter()', () => {
     await emitter.first();
 
     expect(first).toHaveBeenCalledTimes(1);
+  });
+
+  it('Handles subscriptions for multiple methods', async () => {
+    const emitter = createEmitter({
+      async methodOne() {},
+      async methodTwo() {},
+    });
+
+    const methodOneCallback = vi.fn();
+    const methodTwoCallback = vi.fn();
+
+    emitter.subscribe({
+      methodOne: methodOneCallback,
+      methodTwo: methodTwoCallback,
+    });
+
+    await emitter.methodOne();
+    await emitter.methodTwo();
+
+    expect(methodOneCallback).toHaveBeenCalledTimes(1);
+    expect(methodTwoCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it('Handles errors in subscription callbacks gracefully', async () => {
+    const emitter = createEmitter({
+      async method() {},
+    });
+
+    const errorCallback = vi.fn(() => {
+      throw new Error('Subscription Error');
+    });
+    const validCallback = vi.fn();
+
+    emitter.subscribe({
+      method: errorCallback,
+    });
+    emitter.subscribe({
+      method: validCallback,
+    });
+
+    await expect(emitter.method()).resolves.not.toThrow();
+    expect(validCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it('Executes queued methods but skips subscriptions when disabled', async () => {
+    const methodMock = vi.fn(async () => 'Result');
+    const subscriptionMock = vi.fn();
+
+    const emitter = createEmitter({
+      async method() {
+        return methodMock();
+      },
+    });
+
+    emitter.subscribe({ method: subscriptionMock });
+    emitter.disable();
+
+    const result = await emitter.method();
+
+    expect(result).toBe('Result');
+    expect(subscriptionMock).not.toHaveBeenCalled();
+  });
+
+  it('Cleans up subscriptions after unsubscribing', async () => {
+    const emitter = createEmitter({
+      async method() {},
+    });
+
+    const subscription = vi.fn();
+    const unsubscribe = emitter.subscribe({ method: subscription });
+
+    expect(emitter.__SUBSCRIPTIONS__.size).toBe(1);
+
+    unsubscribe();
+
+    expect(emitter.__SUBSCRIPTIONS__.size).toBe(0);
+  });
+
+  it('Triggers the "all" subscription callback for all methods', async () => {
+    const emitter = createEmitter({
+      async methodOne() {},
+      async methodTwo() {},
+    });
+
+    const allCallback = vi.fn();
+
+    emitter.subscribe({ all: allCallback });
+
+    await emitter.methodOne();
+    await emitter.methodTwo();
+
+    expect(allCallback).toHaveBeenCalledTimes(2);
+    expect(allCallback).toHaveBeenCalledWith('methodOne', undefined);
+    expect(allCallback).toHaveBeenCalledWith('methodTwo', undefined);
+  });
+
+  it('Triggers the "catch" subscription callback on errors', async () => {
+    const emitter = createEmitter({
+      async method() {
+        throw new Error('Test Error');
+      },
+    });
+
+    const catchCallback = vi.fn();
+
+    emitter.subscribe({ catch: catchCallback });
+
+    await expect(emitter.method()).rejects.toThrow('Test Error');
+    expect(catchCallback).toHaveBeenCalledTimes(1);
+    expect(catchCallback).toHaveBeenCalledWith('method', expect.any(Error));
+  });
+
+  it('Triggers subscriptions in the order they were added', async () => {
+    const callStack: Array<string> = [];
+
+    const first = vi.fn(() => callStack.push('first'));
+
+    const second = vi.fn(() => callStack.push('second'));
+
+    const emitter = createEmitter({
+      async method() {},
+    });
+
+    emitter.subscribe({ method: first });
+    emitter.subscribe({ method: second });
+
+    await emitter.method();
+
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(second).toHaveBeenCalledTimes(1);
+    expect(callStack).toMatchObject(['first', 'second']);
   });
 });

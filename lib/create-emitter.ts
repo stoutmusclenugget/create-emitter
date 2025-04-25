@@ -69,7 +69,9 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     }
 
     const fn = queue.shift();
+
     await fn?.();
+
     dequeue();
   }
 
