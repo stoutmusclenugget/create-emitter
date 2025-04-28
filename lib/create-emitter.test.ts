@@ -139,22 +139,6 @@ describe('createEmitter()', () => {
     expect(callStack).toMatchObject(['initialize']);
   });
 
-  it('Prevents sync initialize from being called multiple times.', () => {
-    const callStack: Array<string> = [];
-
-    const initialize = () => callStack.push('initialize');
-
-    const emitter = createEmitter({ initialize });
-
-    emitter.initialize();
-
-    expect(callStack).toMatchObject(['initialize']);
-
-    expect(() => emitter.initialize()).toThrow('initialize() can only be called once.');
-
-    expect(callStack).toMatchObject(['initialize']);
-  });
-
   it('Prevents async initialize from being called multiple times.', async () => {
     const callStack: Array<string> = [];
 

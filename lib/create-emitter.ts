@@ -2,8 +2,6 @@ import type { Config, Emitter, Subscription } from './types';
 import { Type } from './types';
 import { typeOf } from './type-of';
 
-const InitializeError = new Error(`initialize() can only be called once.`);
-
 /**
  * Creates an emitter object that wraps the provided configuration object, enabling
  * asynchronous and synchronous methods to be queued, executed, and observed via subscriptions.
@@ -137,7 +135,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
 
           if (value === config.initialize) {
             if (initialized) {
-              reject(InitializeError);
+              reject(new Error(`initialize() can only be called once.`));
               return;
             } else {
               initialized = true;
@@ -159,14 +157,6 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     } else if (type === Type.Function) {
       return function executeSynchronousMethod(...args: Parameters<T[keyof T]>) {
         try {
-          if (value === config.initialize) {
-            if (initialized) {
-              throw InitializeError;
-            } else {
-              initialized = true;
-            }
-          }
-
           const result = value(...args);
 
           if (enabled) {
