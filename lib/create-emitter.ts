@@ -75,9 +75,8 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
    * Handles invoking subscription callbacks for a given key, result, and arguments.
    *
    * @param key - The key of the method being invoked.
-   * @param result - The result of the method invocation.
    * @param args - The arguments passed to the method.
-   * @param error - Optional error if the method invocation failed.
+   * @param result - The result or error of the method invocation.
    */
   async function handleSubscriptions(
     key: keyof T,
@@ -169,10 +168,8 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
             } else {
               initialized = true;
             }
-          } else {
-            if (typeOf(config.initialize) === Type.Undefined) {
-              initialized = true;
-            }
+          } else if (typeOf(config.initialize) === Type.Undefined) {
+            initialized = true;
           }
 
           const result = value(...args);
