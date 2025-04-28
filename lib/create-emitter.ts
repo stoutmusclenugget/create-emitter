@@ -94,9 +94,11 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
           ]);
 
           results.forEach((settlement) => {
-            if (settlement.status === 'rejected') {
-              console.error(`Subscription for ${String(key)} failed:`, settlement.reason);
+            if (settlement.status !== 'rejected') {
+              return;
             }
+
+            console.error(`Subscription for ${String(key)} failed:`, settlement.reason);
           });
         }
       } catch (error) {
