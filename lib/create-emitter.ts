@@ -58,7 +58,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
    * Processes the queue of asynchronous functions, executing them in order.
    * Once the queue is empty, the `flushing` state is set to `false`.
    */
-  async function dequeue() {
+  async function flush() {
     while (taskQueue.length > 0) {
       const task = taskQueue.shift();
       await task?.();
@@ -110,8 +110,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
    * @param key - The key of the configuration object to wrap.
    * @returns The wrapped value or the original value if it is not a function.
    */
-  function wrapValue(key: keyof T) {
-    const value = config[key];
+  function wrapValue(key: keyof T, value = config[key]) {
     const type = typeOf(value);
 
     if (type === Type.AsyncFunction) {
@@ -136,7 +135,6 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
           if (value === config.initialize) {
             if (initialized) {
               reject(new Error(`initialize() can only be called once.`));
-              return;
             } else {
               initialized = true;
               taskQueue.unshift(settle);
@@ -151,7 +149,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
 
           flushing = true;
 
-          dequeue();
+          flush();
         });
       };
     } else if (type === Type.Function) {
@@ -181,9 +179,9 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
      * Methods are wrapped to support queuing, subscriptions, and error handling.
      */
     ...(Object.entries(config).reduce(
-      (accumulator, [key]) => ({
+      (accumulator, [key, value]) => ({
         ...accumulator,
-        [key]: wrapValue(key),
+        [key]: wrapValue(key, value),
       }),
       {},
     ) as T),
