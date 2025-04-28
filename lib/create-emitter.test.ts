@@ -519,6 +519,7 @@ describe('createEmitter()', () => {
     emitter.subscribe({ catch: catchCallback });
 
     await expect(emitter.method()).rejects.toThrow('Test Error');
+
     expect(catchCallback).toHaveBeenCalledTimes(1);
     expect(catchCallback).toHaveBeenCalledWith('method', expect.any(Error));
   });

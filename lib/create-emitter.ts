@@ -85,101 +85,100 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
   function wrapValue(key: keyof T) {
     const value = config[key];
 
-    switch (typeOf(value)) {
-      case Type.AsyncFunction:
-        return async function enqueueAsynchronousMethod(...args: Parameters<T[keyof T]>) {
-          return new Promise((resolve, reject) => {
-            async function settle() {
-              try {
-                const result = await value(...args);
+    if (typeOf(value) === Type.AsyncFunction) {
+      return async function enqueueAsynchronousMethod(...args: Parameters<T[keyof T]>) {
+        return new Promise((resolve, reject) => {
+          async function settle() {
+            try {
+              const result = await value(...args);
 
-                if (enabled) {
-                  for (const [, subscription] of subscriptions) {
-                    try {
-                      await Promise.allSettled([
-                        subscription?.[key]?.(result, ...args),
-                        subscription?.all?.<keyof T>(key, result, ...args),
-                      ]);
-                    } catch {}
-                  }
-                }
-
-                resolve(result);
-              } catch (error) {
+              if (enabled) {
                 for (const [, subscription] of subscriptions) {
                   try {
-                    await subscription?.catch?.<keyof T>(key, error as Error, ...args);
+                    await Promise.allSettled([
+                      subscription?.[key]?.(result, ...args),
+                      subscription?.all?.<keyof T>(key, result, ...args),
+                    ]);
                   } catch {}
                 }
-
-                reject(error);
-              }
-            }
-
-            if (key === INITIALIZE_KEY) {
-              if (initialized) {
-                throw InitializeError;
-              } else {
-                initialized = true;
-                queue.unshift(settle);
-              }
-            } else {
-              if (typeOf(config.initialize) === Type.Undefined) {
-                initialized = true;
               }
 
-              queue.push(settle);
-            }
-
-            if (!initialized || flushing) {
-              return;
-            }
-
-            flushing = true;
-
-            dequeue();
-          });
-        };
-      case Type.Function:
-        return function executeSynchronousMethod(...args: Parameters<T[keyof T]>) {
-          try {
-            if (key === INITIALIZE_KEY) {
-              if (initialized) {
-                throw InitializeError;
-              } else {
-                initialized = true;
-              }
-            } else {
-              if (typeOf(config.initialize) === Type.Undefined) {
-                initialized = true;
-              }
-            }
-
-            const result = value(...args);
-
-            if (enabled) {
+              resolve(result);
+            } catch (error) {
               for (const [, subscription] of subscriptions) {
                 try {
-                  subscription?.[key]?.(result, ...args);
-                  subscription?.all?.<keyof T>(key, result, ...args);
+                  await subscription?.catch?.<keyof T>(key, error as Error, ...args);
                 } catch {}
               }
+
+              reject(error);
+            }
+          }
+
+          if (key === INITIALIZE_KEY) {
+            if (initialized) {
+              throw InitializeError;
+            } else {
+              initialized = true;
+              queue.unshift(settle);
+            }
+          } else {
+            if (typeOf(config.initialize) === Type.Undefined) {
+              initialized = true;
             }
 
-            return result;
-          } catch (error) {
+            queue.push(settle);
+          }
+
+          if (!initialized || flushing) {
+            return;
+          }
+
+          flushing = true;
+
+          dequeue();
+        });
+      };
+    } else if (typeOf(value) === Type.Function) {
+      return function executeSynchronousMethod(...args: Parameters<T[keyof T]>) {
+        try {
+          if (key === INITIALIZE_KEY) {
+            if (initialized) {
+              throw InitializeError;
+            } else {
+              initialized = true;
+            }
+          } else {
+            if (typeOf(config.initialize) === Type.Undefined) {
+              initialized = true;
+            }
+          }
+
+          const result = value(...args);
+
+          if (enabled) {
             for (const [, subscription] of subscriptions) {
               try {
-                subscription?.catch?.<keyof T>(key, error as Error, ...args);
+                subscription?.[key]?.(result, ...args);
+                subscription?.all?.<keyof T>(key, result, ...args);
               } catch {}
             }
-
-            throw error;
           }
-        };
-      default:
-        return value;
+
+          return result;
+        } catch (error) {
+          for (const [, subscription] of subscriptions) {
+            try {
+              subscription?.catch?.<keyof T>(key, error as Error, ...args);
+            } catch {}
+          }
+
+          throw error;
+        }
+      };
     }
+
+    return value;
   }
 
   return {
