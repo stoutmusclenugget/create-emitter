@@ -2,9 +2,7 @@ import type { Config, Emitter, Subscription } from './types';
 import { Type } from './types';
 import { typeOf } from './type-of';
 
-const INITIALIZE_KEY = 'initialize';
-
-const InitializeError = new Error(`${INITIALIZE_KEY}() can only be called once.`);
+const InitializeError = new Error(`initialize() can only be called once.`);
 
 /**
  * Creates an emitter object that wraps the provided configuration object, enabling
@@ -56,7 +54,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
 
   let enabled = config.enabled ?? true;
   let flushing = false;
-  let initialized = false;
+  let initialized = !config.initialize;
 
   /**
    * Processes the queue of asynchronous functions, executing them in order.
@@ -137,18 +135,15 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
             }
           }
 
-          if (key === INITIALIZE_KEY) {
+          if (value === config.initialize) {
             if (initialized) {
-              throw InitializeError;
+              reject(InitializeError);
+              return;
             } else {
               initialized = true;
               taskQueue.unshift(settle);
             }
           } else {
-            if (typeOf(config.initialize) === Type.Undefined) {
-              initialized = true;
-            }
-
             taskQueue.push(settle);
           }
 
@@ -164,14 +159,12 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
     } else if (type === Type.Function) {
       return function executeSynchronousMethod(...args: Parameters<T[keyof T]>) {
         try {
-          if (key === INITIALIZE_KEY) {
+          if (value === config.initialize) {
             if (initialized) {
               throw InitializeError;
             } else {
               initialized = true;
             }
-          } else if (typeOf(config.initialize) === Type.Undefined) {
-            initialized = true;
           }
 
           const result = value(...args);
