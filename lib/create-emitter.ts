@@ -50,7 +50,7 @@ const InitializeError = new Error(`${INITIALIZE_KEY}() can only be called once.`
  * ```
  */
 export function createEmitter<T extends Config>(config: T): Emitter<T> {
-  const queue: Array<() => unknown> = [];
+  const taskQueue: Array<() => unknown> = [];
 
   const subscriptions = new Map<symbol, Subscription<T>>();
 
@@ -63,16 +63,47 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
    * Once the queue is empty, the `flushing` state is set to `false`.
    */
   async function dequeue() {
-    if (queue.length === 0) {
-      flushing = false;
-      return;
+    while (taskQueue.length > 0) {
+      const task = taskQueue.shift();
+      await task?.();
     }
 
-    const fn = queue.shift();
+    flushing = false;
+  }
 
-    await fn?.();
+  /**
+   * Handles invoking subscription callbacks for a given key, result, and arguments.
+   *
+   * @param key - The key of the method being invoked.
+   * @param result - The result of the method invocation.
+   * @param args - The arguments passed to the method.
+   * @param error - Optional error if the method invocation failed.
+   */
+  async function handleSubscriptions(
+    key: keyof T,
+    args: Parameters<T[keyof T]>,
+    result: Awaited<ReturnType<T[keyof T]>> | Error,
+  ) {
+    for (const [, subscription] of subscriptions) {
+      try {
+        if (result instanceof Error) {
+          await subscription?.catch?.<keyof T>(key, result, ...args);
+        } else {
+          const results = await Promise.allSettled([
+            subscription?.[key]?.(result, ...args),
+            subscription?.all?.<keyof T>(key, result, ...args),
+          ]);
 
-    dequeue();
+          results.forEach((settlement) => {
+            if (settlement.status === 'rejected') {
+              console.error(`Subscription for ${String(key)} failed:`, settlement.reason);
+            }
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
   }
 
   /**
@@ -84,8 +115,9 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
    */
   function wrapValue(key: keyof T) {
     const value = config[key];
+    const type = typeOf(value);
 
-    if (typeOf(value) === Type.AsyncFunction) {
+    if (type === Type.AsyncFunction) {
       return async function enqueueAsynchronousMethod(...args: Parameters<T[keyof T]>) {
         return new Promise((resolve, reject) => {
           async function settle() {
@@ -93,23 +125,12 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
               const result = await value(...args);
 
               if (enabled) {
-                for (const [, subscription] of subscriptions) {
-                  try {
-                    await Promise.allSettled([
-                      subscription?.[key]?.(result, ...args),
-                      subscription?.all?.<keyof T>(key, result, ...args),
-                    ]);
-                  } catch {}
-                }
+                await handleSubscriptions(key, args, result);
               }
 
               resolve(result);
-            } catch (error) {
-              for (const [, subscription] of subscriptions) {
-                try {
-                  await subscription?.catch?.<keyof T>(key, error as Error, ...args);
-                } catch {}
-              }
+            } catch (error: unknown) {
+              await handleSubscriptions(key, args, error as Error);
 
               reject(error);
             }
@@ -120,14 +141,14 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
               throw InitializeError;
             } else {
               initialized = true;
-              queue.unshift(settle);
+              taskQueue.unshift(settle);
             }
           } else {
             if (typeOf(config.initialize) === Type.Undefined) {
               initialized = true;
             }
 
-            queue.push(settle);
+            taskQueue.push(settle);
           }
 
           if (!initialized || flushing) {
@@ -139,7 +160,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
           dequeue();
         });
       };
-    } else if (typeOf(value) === Type.Function) {
+    } else if (type === Type.Function) {
       return function executeSynchronousMethod(...args: Parameters<T[keyof T]>) {
         try {
           if (key === INITIALIZE_KEY) {
@@ -157,21 +178,12 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
           const result = value(...args);
 
           if (enabled) {
-            for (const [, subscription] of subscriptions) {
-              try {
-                subscription?.[key]?.(result, ...args);
-                subscription?.all?.<keyof T>(key, result, ...args);
-              } catch {}
-            }
+            handleSubscriptions(key, args, result);
           }
 
           return result;
-        } catch (error) {
-          for (const [, subscription] of subscriptions) {
-            try {
-              subscription?.catch?.<keyof T>(key, error as Error, ...args);
-            } catch {}
-          }
+        } catch (error: unknown) {
+          handleSubscriptions(key, args, error as Error);
 
           throw error;
         }
@@ -186,8 +198,8 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
      * Contains all the wrapped methods and properties from the configuration object.
      * Methods are wrapped to support queuing, subscriptions, and error handling.
      */
-    ...(Object.keys(config).reduce(
-      (accumulator, key) => ({
+    ...(Object.entries(config).reduce(
+      (accumulator, [key]) => ({
         ...accumulator,
         [key]: wrapValue(key),
       }),
@@ -266,13 +278,13 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
      * ```
      */
     subscribe(subscription: Subscription<T>) {
-      const key = Symbol(crypto.randomUUID());
+      const key = Symbol(Date.now());
 
       subscriptions.set(key, subscription);
 
       return function unsubscribe() {
         if (flushing) {
-          queue.push(() => {
+          taskQueue.push(async () => {
             subscriptions.delete(key);
           });
 
