@@ -135,6 +135,7 @@ export function createEmitter<T extends Config>(config: T): Emitter<T> {
           if (value === config.initialize) {
             if (initialized) {
               reject(new Error(`initialize() can only be called once.`));
+              return;
             } else {
               initialized = true;
               taskQueue.unshift(settle);
